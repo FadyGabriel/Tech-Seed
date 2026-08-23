@@ -10,9 +10,10 @@ export const Register = () => {
 
   const [formData, setFormData] = useState({
     username: '',
-    email: '',
+    // email: '',
     phone: '',
-    track: ''
+    age: ''
+    // track: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -30,11 +31,11 @@ export const Register = () => {
     return '';
   };
 
-  const validateEmail = (email) => {
-    const emailRegex = /^[a-zA-Z][a-zA-Z0-9._%+-]{2,}@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) return 'Email must start with a letter and be valid';
-    return '';
-  };
+  // const validateEmail = (email) => {
+  //   const emailRegex = /^[a-zA-Z][a-zA-Z0-9._%+-]{2,}@[^\s@]+\.[^\s@]+$/;
+  //   if (!emailRegex.test(email.trim())) return 'Email must start with a letter and be valid';
+  //   return '';
+  // };
 
   const validatePhone = (phone) => {
     const phoneRegex = /^(01[0125]\d{8})$/;
@@ -42,39 +43,49 @@ export const Register = () => {
     return '';
   };
 
+  const validateAge = (age) => {
+    if (age < 5 || age > 13) return 'your child must be from 5 to 13 years old';
+    return '';
+  };
+
   const handleBlur = (e) => {
     const { name, value } = e.target;
     let error = '';
     if (name === 'username') error = validateName(value);
-    if (name === 'email') error = validateEmail(value);
+    // if (name === 'email') error = validateEmail(value);
     if (name === 'phone') error = validatePhone(value);
+    if (name === 'age') error = validateAge(value);
     setErrors((prevErrors) => ({ ...prevErrors, [name]: error }));
   };
 
   const isFormValid = () => {
     return (
       formData.username.trim() &&
-      formData.email.trim() &&
+      // formData.email.trim() &&
       formData.phone.trim() &&
-      formData.track &&
+      formData.age &&
+      // formData.track &&
       !validateName(formData.username) &&
-      !validateEmail(formData.email) &&
-      !validatePhone(formData.phone)
+      // !validateEmail(formData.email) &&
+      !validatePhone(formData.phone) &&
+      !validateAge(formData.age)
     );
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const nameError = validateName(formData.username);
-    const emailError = validateEmail(formData.email);
+    // const emailError = validateEmail(formData.email);
     const phoneError = validatePhone(formData.phone);
-    const trackError = formData.track === '' ? 'Please select a learning track' : '';
+    const ageError = validateAge(formData.age);
+    // const trackError = formData.track === '' ? 'Please select a learning track' : '';
 
     const newErrors = {
       username: nameError,
-      email: emailError,
+      // email: emailError,
       phone: phoneError,
-      track: trackError
+      age: ageError,
+      // track: trackError
     };
     setErrors(newErrors);
     const hasErrors = Object.values(newErrors).some(error => error !== '');
@@ -92,20 +103,26 @@ export const Register = () => {
 
       console.log('Document added with ID:', docRef.id);
 
-      // toast.success('Form submitted successfully!');
+      const ageRange = formData.age
+      let trackSelect = ''
+      if (ageRange > 5 && ageRange <= 8) {
+        trackSelect = "track unmber 1"
+      } else if (ageRange > 8 && ageRange <= 13) {
+        trackSelect = "track number 2"
+      }
+
       Swal.fire({
-        position: "top-end",
-        icon: "success",
-        title: "Form submitted successfully!",
-        showConfirmButton: false,
-        timer: 1500
+        title: `your child track is ${trackSelect} `,
+        text: "Form submitted successfully!",
+        icon: "success"
       });
 
       setFormData({
         username: '',
-        email: '',
+        // email: '',
         phone: '',
-        track: '',
+        age: ''
+        // track: '',
       });
 
       setErrors({});
@@ -186,7 +203,7 @@ export const Register = () => {
               {errors.username && <p className="text-red-500">{errors.username}</p>}
 
               {/* Email */}
-              <div className="group relative w-[80%] md:w-[90%] max-w-[32.8rem] mt-8">
+              {/* <div className="group relative w-[80%] md:w-[90%] max-w-[32.8rem] mt-8">
                 <input
                   required
                   name="email"
@@ -200,7 +217,7 @@ export const Register = () => {
                 />
                 <span className="absolute bottom-0 left-1/2 w-0 h-[0.125rem] bg-[#1B8354] transition-all duration-500 group-focus-within:left-0 group-focus-within:w-full"></span>
               </div>
-              {errors.email && <p className="text-red-500">{errors.email}</p>}
+              {errors.email && <p className="text-red-500">{errors.email}</p>} */}
 
               {/* Phone */}
               <div className="group relative w-[80%] md:w-[90%] max-w-[32.8rem] mt-8">
@@ -219,28 +236,48 @@ export const Register = () => {
               </div>
               {errors.phone && <p className="text-red-500">{errors.phone}</p>}
 
-              {/* Track Select */}
+              {/* age */}
               <div className="group relative w-[80%] md:w-[90%] max-w-[32.8rem] mt-8">
-                <select
-                  name="track"
-                  id="track"
-                  value={formData.track}
+                <input
+                  required
+                  name="age"
+                  id="age"
+                  placeholder="age"
+                  type="number"
+                  min={5}
+                  max={13}
+                  value={formData.age}
                   onChange={handleChange}
-                  className="peer w-full h-[3.75rem] px-4 pr-[2.5rem] text-lg border border-gray-300 rounded-md outline-none appearance-none hover:border-[#8a93a8] transition-all duration-300"
+                  onBlur={handleBlur}
+                  className="peer w-full h-[3.75rem] px-4 py-2 text-lg border border-gray-300 rounded-md outline-none hover:border-[#8a93a8] transition-all duration-300"
+                />
+                <span className="absolute bottom-0 left-1/2 w-0 h-[0.125rem] bg-[#1B8354] transition-all duration-500 group-focus-within:left-0 group-focus-within:w-full"></span>
+              </div>
+              {errors.age && <p className="text-red-500">{errors.age}</p>}
+
+               {/* Track Select */}
+                {/* <div className="group relative w-[80%] md:w-[90%] max-w-[32.8rem] mt-8">
+                <select
+                    name="track"
+                    id="track"
+                    value={formData.track}
+                    onChange={handleChange}
+                    className="peer w-full h-[3.75rem] px-4 pr-[2.5rem] text-lg border border-gray-300 rounded-md outline-none appearance-none hover:border-[#8a93a8] transition-all duration-300"
                 >
-                  <option value="">Select a learning track</option>
-                  <option value="track1">Track 1</option>
-                  <option value="track2">Track 2</option>
-                  <option value="track3">Track 3</option>
+                    <option value="">Select a learning track</option>
+                    <option value="track1">Track 1</option>
+                    <option value="track2">Track 2</option>
+                    <option value="track3">Track 3</option>
                 </select>
                 <span className="absolute bottom-0 left-1/2 w-0 h-[0.125rem] bg-[#1B8354] transition-all duration-500 group-focus-within:left-0 group-focus-within:w-full"></span>
                 <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center">
-                  <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
+                    </svg>
                 </div>
-              </div>
-              {errors.track && <p className="text-red-500">{errors.track}</p>}
+                </div>
+                {errors.track && <p className="text-red-500">{errors.track}</p>} */}
+
 
               {/* Submit Button */}
               <div className="text-right relative right-16">
