@@ -23,38 +23,90 @@ const level2Data = [...level1Data];
 const level3Data = [...level1Data];
 
 // Drag hook
+// const useDragScroll = () => {
+//   const ref = useRef(null);
+//   const isDragging = useRef(false);
+//   const startX = useRef(0);
+//   const scrollLeft = useRef(0);
+
+//   const onMouseDown = (e) => {
+//     isDragging.current = true;
+//     ref.current.classList.add('cursor-grabbing');
+//     startX.current = e.pageX - ref.current.offsetLeft;
+//     scrollLeft.current = ref.current.scrollLeft;
+//   };
+
+//   const onMouseLeave = () => {
+//     isDragging.current = false;
+//     ref.current.classList.remove('cursor-grabbing');
+//   };
+
+//   const onMouseUp = () => {
+//     isDragging.current = false;
+//     ref.current.classList.remove('cursor-grabbing');
+//   };
+
+//   const onMouseMove = (e) => {
+//     if (!isDragging.current) return;
+//     e.preventDefault();
+//     const x = e.pageX - ref.current.offsetLeft;
+//     const walk = (x - startX.current) * 2;
+//     ref.current.scrollLeft = scrollLeft.current - walk;
+//   };
+
+//   return { ref, onMouseDown, onMouseLeave, onMouseUp, onMouseMove };
+// };
 const useDragScroll = () => {
   const ref = useRef(null);
   const isDragging = useRef(false);
   const startX = useRef(0);
   const scrollLeft = useRef(0);
+  const hasDragged = useRef(false);
 
-  const onMouseDown = (e) => {
+  const onPointerDown = (e) => {
+    if (!ref.current) return;
     isDragging.current = true;
-    ref.current.classList.add('cursor-grabbing');
+    hasDragged.current = false;
     startX.current = e.pageX - ref.current.offsetLeft;
     scrollLeft.current = ref.current.scrollLeft;
+    ref.current.classList.add('cursor-grabbing');
   };
 
-  const onMouseLeave = () => {
-    isDragging.current = false;
-    ref.current.classList.remove('cursor-grabbing');
-  };
-
-  const onMouseUp = () => {
-    isDragging.current = false;
-    ref.current.classList.remove('cursor-grabbing');
-  };
-
-  const onMouseMove = (e) => {
-    if (!isDragging.current) return;
+  const onPointerMove = (e) => {
+    if (!isDragging.current || !ref.current) return;
     e.preventDefault();
     const x = e.pageX - ref.current.offsetLeft;
+    const distance = Math.abs(x - startX.current);
+
+    if (distance > 5) {
+      hasDragged.current = true;
+    }
     const walk = (x - startX.current) * 2;
     ref.current.scrollLeft = scrollLeft.current - walk;
   };
 
-  return { ref, onMouseDown, onMouseLeave, onMouseUp, onMouseMove };
+  const stopDragging = () => {
+    if (!ref.current) return;
+    isDragging.current = false;
+    ref.current.classList.remove('cursor-grabbing');
+  };
+
+  const onClickCapture = (e) => {
+    if (hasDragged.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  return {
+    ref,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp: stopDragging,
+    onPointerLeave: stopDragging,
+    onPointerCancel: stopDragging,
+    onClickCapture,
+  };
 };
 
 // Motion variants
@@ -110,12 +162,41 @@ const TrackSection = ({ title, subtitle, data }) => {
         {subtitle}
       </motion.p>
 
-      <div
+      {/* <div
         ref={drag.ref}
         onMouseDown={drag.onMouseDown}
         onMouseLeave={drag.onMouseLeave}
         onMouseUp={drag.onMouseUp}
         onMouseMove={drag.onMouseMove}
+        className="mt-6 overflow-x-auto scrollbar-hide cursor-grab select-none"
+      >
+        <Link to='/ourlearning' className="flex gap-6 sm:gap-8 w-max pb-4 px-1 sm:px-0">
+          {data.map((track, i) => (
+            <motion.div
+              key={track.id}
+              custom={i}
+              variants={cardVariants}
+              className="w-[24rem] h-[21.688rem] bg-white shadow-md rounded-xl overflow-hidden"
+            >
+              <img src={track.image} alt={track.title} className="w-full h-[13.438rem] object-cover" />
+              <div className="p-4">
+                <h3 className="text-base text-[1.5rem] font-medium text-gray-800 mt-2">
+                  {track.title}
+                </h3>
+              </div>
+            </motion.div>
+          ))}
+        </Link>
+      </div> */}
+      <div
+        ref={drag.ref}
+        onPointerDown={drag.onPointerDown}
+        onPointerLeave={drag.onPointerLeave}
+        onPointerUp={drag.onPointerUp}
+        onPointerMove={drag.onPointerMove}
+        onPointerCancel={drag.onPointerCancel}
+        onClickCapture={drag.onClickCapture}
+        onDragStart={(e) => e.preventDefault()}
         className="mt-6 overflow-x-auto scrollbar-hide cursor-grab select-none"
       >
         <Link to='/ourlearning' className="flex gap-6 sm:gap-8 w-max pb-4 px-1 sm:px-0">

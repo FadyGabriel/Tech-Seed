@@ -2,7 +2,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { FaArrowRight } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../firebase";
 import Swal from 'sweetalert2';
 
@@ -10,10 +10,11 @@ export const Register = () => {
 
   const [formData, setFormData] = useState({
     username: '',
+    parentName: '',
     // email: '',
     phone: '',
-    age: ''
-    // track: ''
+    age: '',
+    track: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -24,10 +25,19 @@ export const Register = () => {
 
   const validateName = (name) => {
     const trimmed = name.trim();
-    if (trimmed.length < 3) return 'Name must be at least 3 characters long';
-    if (/\d/.test(trimmed)) return 'Name must not contain numbers';
     const parts = trimmed.split(/\s+/);
-    if (parts.length < 2) return 'Name must contain 2 or 3 words';
+    if (parts.length < 2 || parts.length > 3) return 'Name must contain 2 or 3 words';
+    if (parts.some((part) => part.length < 3)) return 'Each name must be at least 3 characters long';
+    if (/\d/.test(trimmed)) return 'Name must not contain numbers';
+    return '';
+  };
+
+  const validateParentName = (name) => {
+    const trimmed = name.trim();
+    const parts = trimmed.split(/\s+/);
+    if (parts.length < 2 || parts.length > 3) return 'Parent name must contain 2 or 3 words';
+    if (parts.some((part) => part.length < 3)) return 'Each name must be at least 3 characters long';
+    if (/\d/.test(trimmed)) return 'Parent name must not contain numbers';
     return '';
   };
 
@@ -52,6 +62,7 @@ export const Register = () => {
     const { name, value } = e.target;
     let error = '';
     if (name === 'username') error = validateName(value);
+    if (name === 'parentName') error = validateParentName(value);
     // if (name === 'email') error = validateEmail(value);
     if (name === 'phone') error = validatePhone(value);
     if (name === 'age') error = validateAge(value);
@@ -59,33 +70,39 @@ export const Register = () => {
   };
 
   const isFormValid = () => {
+    const age = Number(formData.age);
+    const trackIsValid = age !== 10 || formData.track !== '';
     return (
       formData.username.trim() &&
+      formData.parentName.trim() &&
       // formData.email.trim() &&
       formData.phone.trim() &&
       formData.age &&
-      // formData.track &&
       !validateName(formData.username) &&
+      !validateParentName(formData.parentName) &&
       // !validateEmail(formData.email) &&
       !validatePhone(formData.phone) &&
-      !validateAge(formData.age)
+      !validateAge(formData.age) &&
+      trackIsValid
     );
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const nameError = validateName(formData.username);
+    const parentNameError = validateParentName(formData.parentName);
     // const emailError = validateEmail(formData.email);
     const phoneError = validatePhone(formData.phone);
     const ageError = validateAge(formData.age);
-    // const trackError = formData.track === '' ? 'Please select a learning track' : '';
+    const trackError = Number(formData.age) === 10 && formData.track === '' ? 'Please select a learning track' : '';
 
     const newErrors = {
       username: nameError,
+      parentName: parentNameError,
       // email: emailError,
       phone: phoneError,
       age: ageError,
-      // track: trackError
+      track: trackError
     };
     setErrors(newErrors);
     const hasErrors = Object.values(newErrors).some(error => error !== '');
@@ -96,33 +113,42 @@ export const Register = () => {
     // setErrors({});
 
     try {
+      
+      const ageRange = Number(formData.age)
+      let trackSelect = ''
+      if (ageRange >= 5 && ageRange <= 9) {
+        trackSelect = "track 1"
+      } else if (ageRange > 10 && ageRange <= 13) {
+        trackSelect = "track 2"
+      } else if (ageRange === 10) {
+        trackSelect = formData.track
+      }
+      
+      const registrationData = {
+        ...formData,
+        track: trackSelect,
+        submittedAt: serverTimestamp(),
+        createdAt: new Date().toISOString()
+      };
       const docRef = await addDoc(
         collection(db, 'Registrations'),
-        formData
+        registrationData
       );
 
       console.log('Document added with ID:', docRef.id);
-
-      const ageRange = formData.age
-      let trackSelect = ''
-      if (ageRange > 5 && ageRange <= 8) {
-        trackSelect = "track unmber 1"
-      } else if (ageRange > 8 && ageRange <= 13) {
-        trackSelect = "track number 2"
-      }
-
       Swal.fire({
         title: `your child track is ${trackSelect} `,
         text: "Form submitted successfully!",
         icon: "success"
       });
-
+      
       setFormData({
         username: '',
+        parentName: '',
         // email: '',
         phone: '',
-        age: ''
-        // track: '',
+        age: '',
+        track: ''
       });
 
       setErrors({});
@@ -202,6 +228,24 @@ export const Register = () => {
               </div>
               {errors.username && <p className="text-red-500">{errors.username}</p>}
 
+              {/* Parent Name */}
+              <div className="group relative w-[80%] md:w-[90%] max-w-[32.8rem] mt-8">
+                <input
+                  required
+                  minLength={3}
+                  name="parentName"
+                  id="parentName"
+                  placeholder="Parent Name"
+                  type="text"
+                  value={formData.parentName}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  className="peer w-full h-[3.75rem] px-4 py-2 text-lg border border-gray-300 rounded-md outline-none hover:border-[#8a93a8] transition-all duration-300"
+                />
+                <span className="absolute bottom-0 left-1/2 w-0 h-[0.125rem] bg-[#1B8354] transition-all duration-500 group-focus-within:left-0 group-focus-within:w-full"></span>
+              </div>
+              {errors.parentName && <p className="text-red-500">{errors.parentName}</p>}
+
               {/* Email */}
               {/* <div className="group relative w-[80%] md:w-[90%] max-w-[32.8rem] mt-8">
                 <input
@@ -278,6 +322,34 @@ export const Register = () => {
                 </div>
                 {errors.track && <p className="text-red-500">{errors.track}</p>} */}
 
+                {Number(formData.age) >= 5 && Number(formData.age) <= 9 && (
+                  <div className='group relative w-[80%] md:w-[90%] max-w-[32.8rem] mt-8 text-2xl p-1'>
+                    Your child is assigned to Track 1
+                  </div>
+                )}
+
+                {Number(formData.age) > 10 && Number(formData.age) <= 13 && (
+                  <div className='group relative w-[80%] md:w-[90%] max-w-[32.8rem] mt-8 text-2xl p-1'>
+                    Your child is assigned to Track 2
+                  </div>
+                )}
+                {errors.track && <p className="text-red-500">{errors.track}</p>}
+
+                {Number(formData.age) === 10 && (
+                  <div className='group relative w-[80%] md:w-[90%] max-w-[32.8rem] mt-8'>
+                    <select 
+                      name="track"
+                      id="track"
+                      value={formData.track}
+                      onChange={handleChange}
+                      className="peer w-full h-[3.75rem] px-4 pr-[2.5rem] text-lg border border-gray-300 rounded-md outline-none appearance-none hover:border-[#8a93a8] transition-all duration-300"
+                    >
+                      <option value="">Select a learning track</option>
+                      <option value="track 1">Track 1</option>
+                      <option value="track 2">Track 2</option>
+                    </select>
+                  </div>
+                )}
 
               {/* Submit Button */}
               <div className="text-right relative right-16">
